@@ -19,7 +19,10 @@ logging.getLogger('Marathon').addHandler(logging.NullHandler())
 
 
 class Marathon:
-    """ Class for Mesos application orchestration using Marathon """
+    """ Class for Mesos application orchestration using Marathon 
+    
+        This class logs through a logger named 'Marathon'
+    """
 
     def __init__(self, baseurl, access_token):
         self.baseurl = baseurl
