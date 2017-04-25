@@ -11,6 +11,7 @@ import logging
 import os
 import requests
 import sys
+import time
 import warnings
 
 from requests.packages.urllib3 import exceptions
@@ -82,19 +83,20 @@ class Marathon:
         return current
 
     def _wait_for_application_instances(self, application_id, application_version, application_instances):
-        self.logger.info("waiting for %s running instance(s) of version '%s' of application {}",
+        self.logger.info("waiting for %s running instance(s) of version '%s' of application %s",
                          application_instances, application_version, application_id)
         while True:
             current = self._get_application(application_id)
             instances_ok = 0
             for task in current['app']['tasks']:
-                if task['id'] == application_id \
+                if task['appId'].startswith(application_id) \
                         and task['version'] >= application_version \
                         and task['state'] == 'TASK_RUNNING' \
                         and Marathon.is_healthy(task):
                     instances_ok += 1
             if instances_ok == int(application_instances):
                 break
+            time.sleep(1)
         return current
 
     @staticmethod
@@ -129,7 +131,7 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
     parser.add_argument('--baseurl', required=True, help='base URL of marathon service')
     parser.add_argument('--access-token', required=True, help='cookie for authentication on marathon')
-    parser.add_argument('json', help='file containing marathon application JSON',
+    parser.add_argument('--json', help='file containing marathon application JSON',
                         type=argparse.FileType('r'), default=sys.stdin)
     return parser.parse_args()
 
