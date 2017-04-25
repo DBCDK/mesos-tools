@@ -71,12 +71,18 @@ class Marathon:
         print("{} waiting for version '{}' of application {}".format(Marathon.now(), application_version, application_id))
         while True:
             current = self._get_application(application_id)
-            if current is not None and current['app']['version'] > application_version:
+            if current is not None and current['app']['version'] >= application_version:
                 break
         return current
 
     def _wait_for_application_instances(self, application_id, application_version, application_instances):
-        pass
+        print("{} waiting for {} running instance(s) of version '{}' of application {}"
+              .format(Marathon.now(), application_instances, application_version, application_id))
+        while True:
+            current = self._get_application(application_id)
+            if current is not None and current['app']['version'] >= application_version:
+                break
+        return current
 
     @staticmethod
     def http_post(url, json_data, cookies):
