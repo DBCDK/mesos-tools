@@ -26,7 +26,7 @@ class Marathon:
         """ Marathon service access token """
 
     def deploy(self, application):
-        current = self._get_application(application)
+        current = self._get_application(application['id'])
         if current is None:
             self._create_application(application)
         else:
