@@ -80,9 +80,22 @@ class Marathon:
               .format(Marathon.now(), application_instances, application_version, application_id))
         while True:
             current = self._get_application(application_id)
-            if current is not None and current['app']['version'] >= application_version:
+            instances_ok = 0
+            for task in current['app']['tasks']:
+                if task['id'] == application_id \
+                        and task['version'] >= application_version \
+                        and task['state'] == 'TASK_RUNNING' \
+                        and Marathon.is_healthy(task):
+                    instances_ok += 1
+            if instances_ok == int(application_instances):
                 break
         return current
+
+    @staticmethod
+    def is_healthy(task):
+        if 'healthCheckResults' in task:
+            return task['healthCheckResults']['alive']
+        return True
 
     @staticmethod
     def http_post(url, json_data, cookies):
