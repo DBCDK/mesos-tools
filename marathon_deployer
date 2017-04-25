@@ -3,17 +3,19 @@
 # See license text at https://opensource.dbc.dk/licenses/gpl-3.0
 #
 # -*- coding: utf-8 -*-
-# -*- mode: python -*-
+# -*- mode: python -*-                      /
 
 import argparse
 import json
+import logging
 import os
 import requests
 import sys
 import warnings
 
-from datetime import datetime
 from requests.packages.urllib3 import exceptions
+
+logging.getLogger('Marathon').addHandler(logging.NullHandler())
 
 
 class Marathon:
@@ -24,6 +26,7 @@ class Marathon:
         """ Marathon service base URL """
         self.cookies = {'access_token': access_token}
         """ Marathon service access token """
+        self.logger = logging.getLogger('Marathon')
 
     def deploy(self, application):
         current = self._get_application(application['id'])
@@ -45,7 +48,7 @@ class Marathon:
 
     def _create_application(self, application):
         application_id = application['id']
-        print("{} creating application {}".format(Marathon.now(), application_id))
+        self.logger.info("creating application %s", application_id)
         response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK or status_code == requests.codes.CREATED:
@@ -58,7 +61,7 @@ class Marathon:
 
     def _update_application(self, application, old_version):
         application_id = application['id']
-        print("{} updating version '{}' of application {}".format(Marathon.now(), old_version, application_id))
+        self.logger.info("updating version '%s' of application %s", old_version, application_id)
         response = Marathon.http_put("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
@@ -70,7 +73,7 @@ class Marathon:
                             .format(status_code, application_id, response.text))
 
     def _wait_for_new_application_version(self, application_id, application_version):
-        print("{} waiting for version '{}' of application {}".format(Marathon.now(), application_version, application_id))
+        self.logger.info("waiting for version '{}' of application {}", application_version, application_id)
         while True:
             current = self._get_application(application_id)
             if current is not None and current['app']['version'] >= application_version:
@@ -78,8 +81,8 @@ class Marathon:
         return current
 
     def _wait_for_application_instances(self, application_id, application_version, application_instances):
-        print("{} waiting for {} running instance(s) of version '{}' of application {}"
-              .format(Marathon.now(), application_instances, application_version, application_id))
+        self.logger.info("waiting for {} running instance(s) of version '{}' of application {}",
+                         application_instances, application_version, application_id)
         while True:
             current = self._get_application(application_id)
             instances_ok = 0
@@ -120,10 +123,6 @@ class Marathon:
             response = requests.get(url, cookies=cookies, verify=False)
         return response
 
-    @staticmethod
-    def now():
-        return str(datetime.now())
-
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
@@ -134,11 +133,36 @@ def parse_args():
     return parser.parse_args()
 
 
+def create_logger():
+    logger = logging.getLogger('Marathon')
+    logger.setLevel(logging.INFO)
+
+    # create console handler and set level to debug
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+
+    # create formatter
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    # add formatter to console handler
+    console_handler.setFormatter(formatter)
+
+    # add console_handler to logger
+    logger.addHandler(console_handler)
+    return logger
+
+
 def main():
     args = parse_args()
-    json_data = json.load(args.json)
-    marathon = Marathon(args.baseurl, args.access_token)
-    marathon.deploy(json_data)
+    logger = create_logger()
+
+    try:
+        json_data = json.load(args.json)
+        marathon = Marathon(args.baseurl, args.access_token)
+        marathon.deploy(json_data)
+    except Exception as e:
+        logger.error(e, exc_info=True)
+        sys.exit(1)
 
     sys.exit(os.EX_OK)
 
