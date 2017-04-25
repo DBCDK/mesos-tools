@@ -48,7 +48,8 @@ class Marathon:
         response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK or status_code == requests.codes.CREATED:
-            current = self._wait_for_new_application_version(application_id, '1970-01-01T00:00:00Z')
+            deployment = json.loads(response.text)
+            current = self._wait_for_new_application_version(application_id, deployment['version'])
         else:
             raise Exception("{} error during creation of application {} - {}"
                             .format(status_code, application_id, response.text))
@@ -56,12 +57,20 @@ class Marathon:
     def _update_application(self, application, old_version):
         application_id = application['id']
         print("{} updating version '{}' of application {}".format(Marathon.now(), old_version, application_id))
+        response = Marathon.http_put("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
+        status_code = response.status_code
+        if status_code == requests.codes.OK:
+            deployment = json.loads(response.text)
+            current = self._wait_for_new_application_version(application_id, deployment['version'])
+        else:
+            raise Exception("{} error during update of application {} - {}"
+                            .format(status_code, application_id, response.text))
 
-    def _wait_for_new_application_version(self, application_id, old_version):
-        print("{} waiting for new version of application {}".format(Marathon.now(), application_id))
+    def _wait_for_new_application_version(self, application_id, application_version):
+        print("{} waiting for version '{}' of application {}".format(Marathon.now(), application_version, application_id))
         while True:
             current = self._get_application(application)
-            if current is not None and current['app']['version'] > old_version:
+            if current is not None and current['app']['version'] > application_version:
                 break
         return current
 
