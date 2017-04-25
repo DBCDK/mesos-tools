@@ -20,7 +20,10 @@ logging.getLogger('Marathon').addHandler(logging.NullHandler())
 
 
 class Marathon:
-    """ Class for Mesos application orchestration using Marathon """
+    """ Class for Mesos application orchestration using Marathon 
+    
+        This class logs through a logger named 'Marathon'
+    """
 
     def __init__(self, baseurl, access_token):
         self.baseurl = baseurl
@@ -34,7 +37,12 @@ class Marathon:
         if current is None:
             self._create_application(application)
         else:
-            self._update_application(application, current['app']['version'])
+            if Marathon.is_subdict(application, current['app']):
+                self.logger.debug("comparison indicates that given %s causes no update of current %s", application,
+                                  current['app'])
+                self._restart_application(application, current['app']['version'])
+            else:
+                self._update_application(application, current['app']['version'])
 
     def _get_application(self, application_id):
         response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
@@ -72,6 +80,20 @@ class Marathon:
             self._wait_for_application_instances(application_id, deployment['version'], application['instances'])
         else:
             raise Exception("{} error during update of application {} - {}"
+                            .format(status_code, application_id, response.text))
+
+    def _restart_application(self, application, old_version):
+        application_id = application['id']
+        self.logger.info("restarting version '%s' of application %s", old_version, application_id)
+        response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps', application['id'], 'restart']), None,
+                                      self.cookies)
+        status_code = response.status_code
+        if status_code == requests.codes.OK:
+            deployment = json.loads(response.text)
+            self._wait_for_new_application_version(application_id, deployment['version'])
+            self._wait_for_application_instances(application_id, deployment['version'], application['instances'])
+        else:
+            raise Exception("{} error during restart of application {} - {}"
                             .format(status_code, application_id, response.text))
 
     def _wait_for_new_application_version(self, application_id, application_version):
@@ -126,6 +148,10 @@ class Marathon:
             response = requests.get(url, cookies=cookies, verify=False)
         return response
 
+    @staticmethod
+    def is_subdict(new, original):
+        return dict(original, **new) == new
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
@@ -138,11 +164,11 @@ def parse_args():
 
 def create_logger():
     logger = logging.getLogger('Marathon')
-    logger.setLevel(logging.INFO)
+    logger.setLevel(logging.DEBUG)
 
     # create console handler and set level to debug
     console_handler = logging.StreamHandler()
-    console_handler.setLevel(logging.INFO)
+    console_handler.setLevel(logging.DEBUG)
 
     # create formatter
     formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
