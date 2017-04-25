@@ -30,8 +30,7 @@ class Marathon:
         else:
             self._update_application(application, current['app']['version'])
 
-    def _get_application(self, application):
-        application_id = application['id']
+    def _get_application(self, application_id):
         response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
@@ -49,7 +48,8 @@ class Marathon:
         status_code = response.status_code
         if status_code == requests.codes.OK or status_code == requests.codes.CREATED:
             deployment = json.loads(response.text)
-            current = self._wait_for_new_application_version(application_id, deployment['version'])
+            self._wait_for_new_application_version(application_id, deployment['version'])
+            self._wait_for_application_instances(application_id, deployment['version'], application['instances'])
         else:
             raise Exception("{} error during creation of application {} - {}"
                             .format(status_code, application_id, response.text))
@@ -61,7 +61,8 @@ class Marathon:
         status_code = response.status_code
         if status_code == requests.codes.OK:
             deployment = json.loads(response.text)
-            current = self._wait_for_new_application_version(application_id, deployment['version'])
+            self._wait_for_new_application_version(application_id, deployment['version'])
+            self._wait_for_application_instances(application_id, deployment['version'], application['instances'])
         else:
             raise Exception("{} error during update of application {} - {}"
                             .format(status_code, application_id, response.text))
@@ -69,7 +70,7 @@ class Marathon:
     def _wait_for_new_application_version(self, application_id, application_version):
         print("{} waiting for version '{}' of application {}".format(Marathon.now(), application_version, application_id))
         while True:
-            current = self._get_application(application)
+            current = self._get_application(application_id)
             if current is not None and current['app']['version'] > application_version:
                 break
         return current
