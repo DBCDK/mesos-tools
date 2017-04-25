@@ -1,0 +1,116 @@
+#!/usr/bin/env python3
+# Copyright Dansk Bibliotekscenter a/s. Licensed under GNU GPL v3
+# See license text at https://opensource.dbc.dk/licenses/gpl-3.0
+#
+# -*- coding: utf-8 -*-
+# -*- mode: python -*-
+
+import argparse
+import json
+import os
+import requests
+import sys
+import warnings
+
+from datetime import datetime
+from requests.packages.urllib3 import exceptions
+
+
+class Marathon:
+    ''' Docs '''
+
+    def __init__(self, baseurl, access_token):
+        self.baseurl = baseurl
+        self.cookies = {'access_token': access_token}
+
+    def deploy(self, application):
+        current = self._get_application(application)
+        if current is None:
+            self._create_application(application)
+        else:
+            self._update_application(application, current['app']['version'])
+
+    def _get_application(self, application):
+        application_id = application['id']
+        response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
+        status_code = response.status_code
+        if status_code == requests.codes.OK:
+            return json.loads(response.text)
+        elif status_code == requests.codes.NOT_FOUND:
+            return None
+        else:
+            raise Exception("{} error while fetching application {} - {}"
+                            .format(status_code, application_id, response.text))
+
+    def _create_application(self, application):
+        application_id = application['id']
+        print("{} creating application {}".format(Marathon.now(), application_id))
+        response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
+        status_code = response.status_code
+        if status_code == requests.codes.OK or status_code == requests.codes.CREATED:
+            current = self._wait_for_new_application_version(application_id, '1970-01-01T00:00:00Z')
+        else:
+            raise Exception("{} error during creation of application {} - {}"
+                            .format(status_code, application_id, response.text))
+
+    def _update_application(self, application, old_version):
+        application_id = application['id']
+        print("{} updating version '{}' of application {}".format(Marathon.now(), old_version, application_id))
+
+    def _wait_for_new_application_version(self, application_id, old_version):
+        print("{} waiting for new version of application {}".format(Marathon.now(), application_id))
+        while True:
+            current = self._get_application(application)
+            if current is not None and current['app']['version'] > old_version:
+                break
+        return current
+
+    def _wait_for_application_instances(self, application_id, application_version, application_instances):
+        pass
+
+    @staticmethod
+    def http_post(url, json_data, cookies):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
+            response = requests.post(url, cookies=cookies, json=json_data, verify=False)
+        return response
+
+    @staticmethod
+    def http_put(url, json_data, cookies):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
+            response = requests.put(url, cookies=cookies, json=json_data, verify=False)
+        return response
+
+    @staticmethod
+    def http_get(url, cookies):
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
+            response = requests.get(url, cookies=cookies, verify=False)
+        return response
+
+    @staticmethod
+    def now():
+        return str(datetime.now())
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(description='Script for interaction with mesos marathon')
+    parser.add_argument('--baseurl', required=True, help='base URL of marathon service')
+    parser.add_argument('--access-token', required=True, help='cookie for authentication on marathon')
+    parser.add_argument('json', help='file containing marathon application JSON',
+                        type=argparse.FileType('r'), default=sys.stdin)
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+    json_data = json.load(args.json)
+    marathon = Marathon(args.baseurl, args.access_token)
+    marathon.deploy(json_data)
+
+    sys.exit(os.EX_OK)
+
+
+if __name__ == "__main__":
+    main()
