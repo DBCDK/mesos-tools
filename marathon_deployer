@@ -120,6 +120,12 @@ class Marathon:
             time.sleep(1)
         return current
 
+    def _is_scale_only_update(self, application_json):
+        application = json.loads(application_json)
+        current = self._get_application(application['id'])
+        application['instances'] = current['app']['instances']
+        return Marathon.is_subdict(application, current['app'])
+
     @staticmethod
     def is_healthy(task):
         if 'healthCheckResults' in task:
