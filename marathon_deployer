@@ -45,6 +45,7 @@ class Marathon:
             else:
                 self._update_application(application, current['app']['version'],
                                          Marathon.is_scale_only_update(application, current))
+        self.logger.info("deployment operation finished for %s", application['id'])
 
     def _get_application(self, application_id):
         response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
