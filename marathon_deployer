@@ -124,7 +124,9 @@ class Marathon:
     @staticmethod
     def is_healthy(task):
         if 'healthCheckResults' in task:
-            return task['healthCheckResults']['alive']
+            for result in task['healthCheckResults']:
+                if not result['alive']:
+                    return False
         return True
 
     @staticmethod
