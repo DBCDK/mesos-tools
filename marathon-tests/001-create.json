@@ -22,7 +22,7 @@
             "timeoutSeconds": 5
         }
     ],
-    "id": "/dev/xp/marathon-test-healthcheck-ok-jda",
+    "id": "/dev/mesos-tools/marathon-deployer-test-app",
     "instances": 3,
     "mem": 50,
     "ports": [
