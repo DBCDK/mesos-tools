@@ -123,8 +123,8 @@ $ ./marathon_deployer marathon-tests/002-update.json -b https://marathon.host.co
 2017-04-26 10:12:05,589 - Marathon - INFO - waiting for 5 running instance(s) of application /dev/mesos-tools/marathon-deployer-test-app
 ```
 
-# Todo/futures wishes
+# Todo/future wishes
 
  - Support groups
  - Multiple applications
- - Rollback og failed deployments after a user set timeout
+ - Rollback of failed deployments after a user set timeout
