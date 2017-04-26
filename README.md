@@ -38,15 +38,15 @@ When executed with the -h parameter the following output is given:
       --access-token ACCESS_TOKEN
                             cookie for authentication on marathon`
 
-To deploy an application both or the baseurl and access-token 
+To deploy an application both the baseurl and access-token is needed. 
 
 ```bash
-./marathon_deployer mesos-marathon-application.json --baseurl https://mcp1.dbc.dk:8443 --access-token my_secret_access_token
+./marathon_deployer mesos-marathon-application.json --baseurl https://marathon.host.com:8443 --access-token my_secret_access_token
 ```
 
 ## Script behaviour
 
-This section describes how the script behaves in various scenarios.  
+This section describes how the script behaves in various scenarios.
 
 ### New application
 
