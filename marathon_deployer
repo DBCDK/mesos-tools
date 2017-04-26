@@ -151,7 +151,8 @@ class Marathon:
     def http_post(url, json_data, cookies):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.post(url, cookies=cookies, json=json_data, verify=False)
+            response = requests.post(url, cookies=cookies, json=json_data, verify=False,
+                                     headers={'content-type': 'application/json'})
         return response
 
     @staticmethod
