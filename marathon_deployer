@@ -155,9 +155,9 @@ class Marathon:
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
-    parser.add_argument('--baseurl', required=True, help='base URL of marathon service')
-    parser.add_argument('--access-token', required=True, help='cookie for authentication on marathon')
-    parser.add_argument('--json', help='file containing marathon application JSON',
+    parser.add_argument('-b', '--baseurl', required=True, help='base URL of marathon service')
+    parser.add_argument('-a', '--access-token', required=True, help='cookie for authentication on marathon')
+    parser.add_argument('-j', '--json', help='file containing marathon application JSON',
                         type=argparse.FileType('r'), default=sys.stdin)
     return parser.parse_args()
 
