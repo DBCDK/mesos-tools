@@ -105,14 +105,13 @@ class Marathon:
         return current
 
     def _wait_for_application_instances(self, application_id, application_version, application_instances):
-        self.logger.info("waiting for %s running instance(s) of version '%s' of application %s",
-                         application_instances, application_version, application_id)
+        self.logger.info("waiting for %s running instance(s) of application %s",
+                         application_instances, application_id)
         while True:
             current = self._get_application(application_id)
             instances_ok = 0
             for task in current['app']['tasks']:
                 if task['appId'].startswith(application_id) \
-                        and task['version'] >= application_version \
                         and task['state'] == 'TASK_RUNNING' \
                         and Marathon.is_healthy(task):
                     instances_ok += 1
