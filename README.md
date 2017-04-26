@@ -14,6 +14,19 @@ At this time the script does not support groups but only single application depl
 
 Using the scripts.
 
+The examples provided currently use an internal DBC A/S image so in order to use the examples replace the docker images
+with an appropriate python3 docker image.
+
+Replace:
+```
+docker.dbc.dk/dbc-python3:latest
+```
+
+With (for example):
+```
+python3:latest
+```
+
 ## Usage
 
 When executed without parameters the following output is given:
