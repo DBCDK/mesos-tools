@@ -6,6 +6,7 @@
 # -*- mode: python -*-                      /
 
 import argparse
+import copy
 import json
 import logging
 import os
@@ -42,7 +43,8 @@ class Marathon:
                                   current['app'])
                 self._restart_application(application, current['app']['version'])
             else:
-                self._update_application(application, current['app']['version'])
+                self._update_application(application, current['app']['version'],
+                                         Marathon.is_scale_only_update(application, current))
 
     def _get_application(self, application_id):
         response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
@@ -68,7 +70,7 @@ class Marathon:
             raise Exception("{} error during creation of application {} - {}"
                             .format(status_code, application_id, response.text))
 
-    def _update_application(self, application, old_version):
+    def _update_application(self, application, old_version, scale_only=False):
         application_id = application['id']
         self.logger.info("updating version '%s' of application %s", old_version, application_id)
         response = Marathon.http_put("/".join([self.baseurl, 'v2', 'apps', application['id']]), application,
@@ -77,7 +79,8 @@ class Marathon:
         if status_code == requests.codes.OK:
             deployment = json.loads(response.text)
             self._wait_for_new_application_version(application_id, deployment['version'])
-            self._wait_for_application_instances(application_id, deployment['version'], application['instances'])
+            self._wait_for_application_instances(application_id, deployment['version'], application['instances'],
+                                                 scale_only)
         else:
             raise Exception("{} error during update of application {} - {}"
                             .format(status_code, application_id, response.text))
@@ -104,7 +107,8 @@ class Marathon:
                 break
         return current
 
-    def _wait_for_application_instances(self, application_id, application_version, application_instances):
+    def _wait_for_application_instances(self, application_id, application_version, application_instances,
+                                        scale_only=False):
         self.logger.info("waiting for %s running instance(s) of application %s",
                          application_instances, application_id)
         while True:
@@ -114,17 +118,26 @@ class Marathon:
                 if task['appId'].startswith(application_id) \
                         and task['state'] == 'TASK_RUNNING' \
                         and Marathon.is_healthy(task):
-                    instances_ok += 1
+                    if not scale_only:
+                        if task['version'] >= application_version:
+                            instances_ok += 1
+                    else:
+                        instances_ok += 1
             if instances_ok == int(application_instances):
                 break
             time.sleep(1)
         return current
 
-    def _is_scale_only_update(self, application_json):
-        application = json.loads(application_json)
-        current = self._get_application(application['id'])
-        application['instances'] = current['app']['instances']
-        return Marathon.is_subdict(application, current['app'])
+    @staticmethod
+    def is_scale_only_update(application, current):
+        if 'instances' in application:
+            if application['instances'] == current['app']['instances']:
+                return False
+        else:
+            return False
+        application_copy = copy.deepcopy(application)
+        application_copy['instances'] = current['app']['instances']
+        return Marathon.is_subdict(application_copy, current['app'])
 
     @staticmethod
     def is_healthy(task):
