@@ -18,7 +18,7 @@ Using the scripts.
 
 When executed without parameters the following output is given:
 
-```bash
+```
 $ ./marathon_deployer
 usage: marathon_deployer [-h] -b BASEURL -a ACCESS_TOKEN [-j JSON]
 marathon_deployer: error: the following arguments are required: -b/--baseurl, -a/--access-token
@@ -26,7 +26,7 @@ marathon_deployer: error: the following arguments are required: -b/--baseurl, -a
 
 When executed with the -h parameter the following output is given:
 
-```bash
+```
 $ ./marathon_deployer -h
 usage: marathon_deployer [-h] -b BASEURL -a ACCESS_TOKEN json
 
@@ -45,8 +45,8 @@ optional arguments:
 
 To deploy an application both the baseurl and access-token is needed. 
 
-```bash
-./marathon_deployer -j mesos-marathon-application.json -b https://marathon.host.com:8443 -a my_secret_access_token
+```
+$ ./marathon_deployer mesos-marathon-application.json -b https://marathon.host.com:8443 -a my_secret_access_token
 ```
 
 ## Script behaviour
