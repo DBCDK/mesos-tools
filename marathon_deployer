@@ -151,7 +151,7 @@ class Marathon:
 
     @staticmethod
     def is_subdict(new, original):
-        return dict(original, **new) == new
+        return dict(original, **new) == original
 
 
 def parse_args():
