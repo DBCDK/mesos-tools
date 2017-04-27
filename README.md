@@ -1,5 +1,21 @@
 <img src="http://www.dbc.dk/logo.png" alt="DBC" title="DBC" align="right">
 
+# TOC
+
+- [Mesos Tools](#mesos-tools)
+- [Requirements](#requirements)
+- [Getting Started](#getting-started)
+  * [Usage](#usage)
+  * [Script behaviour](#script-behaviour)
+    + [New application](#new-application)
+      - [Example](#example)
+    + [Existing application](#existing-application)
+      - [Changed application config](#changed-application-config)
+      - [Example](#example-1)
+      - [Unchanged application config](#unchanged-application-config)
+      - [Example](#example-2)
+- [Todo/future wishes](#todo-future-wishes)
+
 # Mesos Tools
 
 Scripts for Mesos application orchestration using Marathon.
