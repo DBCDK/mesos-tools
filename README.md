@@ -32,16 +32,16 @@ python3:latest
 When executed without parameters the following output is given:
 
 ```
-$ ./marathon_deployer
-usage: marathon_deployer [-h] -b BASEURL -a ACCESS_TOKEN [-j JSON]
-marathon_deployer: error: the following arguments are required: -b/--baseurl, -a/--access-token
+$ ./marathon-deployer
+usage: marathon-deployer [-h] -b BASEURL -a ACCESS_TOKEN [-j JSON]
+marathon-deployer: error: the following arguments are required: -b/--baseurl, -a/--access-token
 ```
 
 When executed with the -h parameter the following output is given:
 
 ```
-$ ./marathon_deployer -h
-usage: marathon_deployer [-h] -b BASEURL -a ACCESS_TOKEN json
+$ ./marathon-deployer -h
+usage: marathon-deployer [-h] -b BASEURL -a ACCESS_TOKEN json
 
 Script for Mesos application orchestration using Marathon
 
@@ -59,7 +59,7 @@ optional arguments:
 To deploy an application both the baseurl and access-token is needed. 
 
 ```
-$ ./marathon_deployer mesos-marathon-application.json -b https://marathon.host.com:8443 -a my_secret_access_token
+$ ./marathon-deployer mesos-marathon-application.json -b https://marathon.host.com:8443 -a my_secret_access_token
 ```
 
 ## Script behaviour
@@ -78,7 +78,7 @@ endpoint:
 __New application__
 
 ```
-$ ./marathon_deployer marathon-tests/001-create.json --baseurl https://marathon.host.com:8443 --access-token my_secret_access_token
+$ ./marathon-deployer marathon-tests/001-create.json --baseurl https://marathon.host.com:8443 --access-token my_secret_access_token
 2017-04-26 10:06:01,881 - Marathon - INFO - creating application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:06:02,417 - Marathon - INFO - waiting for version '2017-04-26T08:06:02.433Z' of application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:06:02,461 - Marathon - INFO - waiting for 3 running instance(s) of application /dev/mesos-tools/marathon-deployer-test-app
@@ -102,7 +102,7 @@ application endpoint:
 __Scale applcation__
 
 ```
-$ ./marathon_deployer marathon-tests/002-update.json --baseurl https://marathon.host.com:8443 --access-token my_secret_access_token
+$ ./marathon-deployer marathon-tests/002-update.json --baseurl https://marathon.host.com:8443 --access-token my_secret_access_token
 2017-04-26 10:09:16,910 - Marathon - INFO - updating version '2017-04-26T08:06:02.433Z' of application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:09:17,465 - Marathon - INFO - waiting for version '2017-04-26T08:09:17.477Z' of application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:09:17,503 - Marathon - INFO - waiting for 5 running instance(s) of application /dev/mesos-tools/marathon-deployer-test-app
@@ -111,7 +111,7 @@ $ ./marathon_deployer marathon-tests/002-update.json --baseurl https://marathon.
 __Suspending application__
 
 ```
-$ ./marathon_deployer marathon-tests/003-suspend.json -b https://marathon.host.com:8443 -a my_secret_access_token
+$ ./marathon-deployer marathon-tests/003-suspend.json -b https://marathon.host.com:8443 -a my_secret_access_token
 2017-04-26 10:16:17,462 - Marathon - INFO - updating version '2017-04-26T08:12:05.580Z' of application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:16:18,193 - Marathon - INFO - waiting for version '2017-04-26T08:16:18.041Z' of application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:16:18,223 - Marathon - INFO - waiting for 0 running instance(s) of application /dev/mesos-tools/marathon-deployer-test-app
@@ -129,7 +129,7 @@ in the application. The restart is done by posting to the marathon application r
 __Unchanged application__
 
 ```
-$ ./marathon_deployer marathon-tests/002-update.json -b https://marathon.host.com:8443 --access-token my_secret_access_token
+$ ./marathon-deployer marathon-tests/002-update.json -b https://marathon.host.com:8443 --access-token my_secret_access_token
 2017-04-26 10:12:04,995 - Marathon - DEBUG - <...huge debug dump of json objects...>
 2017-04-26 10:12:04,995 - Marathon - INFO - restarting version '2017-04-26T08:09:17.477Z' of application /dev/mesos-tools/marathon-deployer-test-app
 2017-04-26 10:12:05,562 - Marathon - INFO - waiting for version '2017-04-26T08:12:05.580Z' of application /dev/mesos-tools/marathon-deployer-test-app
