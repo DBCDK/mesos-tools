@@ -1,0 +1,187 @@
+{
+  "app": {
+    "id": "/dev/mesos-tools/marathon-deployer-test-app",
+    "cmd": "env && python3 -m http.server $PORT0",
+    "args": null,
+    "user": null,
+    "env": {},
+    "instances": 3,
+    "cpus": 0.25,
+    "mem": 50,
+    "disk": 0,
+    "gpus": 0,
+    "executor": "",
+    "constraints": [
+      [
+        "net",
+        "CLUSTER",
+        "prod"
+      ],
+      [
+        "hostname",
+        "UNIQUE"
+      ]
+    ],
+    "uris": [],
+    "fetch": [],
+    "storeUrls": [],
+    "backoffSeconds": 1,
+    "backoffFactor": 1.15,
+    "maxLaunchDelaySeconds": 3600,
+    "container": {
+      "type": "DOCKER",
+      "volumes": [],
+      "docker": {
+        "image": "docker.dbc.dk/dbc-python3:latest",
+        "network": null,
+        "portMappings": [],
+        "privileged": false,
+        "parameters": [],
+        "forcePullImage": false
+      }
+    },
+    "healthChecks": [
+      {
+        "gracePeriodSeconds": 3,
+        "intervalSeconds": 10,
+        "timeoutSeconds": 5,
+        "maxConsecutiveFailures": 3,
+        "portIndex": 0,
+        "path": "/",
+        "protocol": "HTTP",
+        "ignoreHttp1xx": false
+      }
+    ],
+    "readinessChecks": [],
+    "dependencies": [],
+    "upgradeStrategy": {
+      "minimumHealthCapacity": 0.5,
+      "maximumOverCapacity": 0.5
+    },
+    "labels": {
+      "owner": "jbn@dbc.dk"
+    },
+    "ipAddress": null,
+    "version": "2017-04-26T15:56:25.929Z",
+    "residency": null,
+    "secrets": {},
+    "taskKillGracePeriodSeconds": null,
+    "unreachableStrategy": {
+      "inactiveAfterSeconds": 300,
+      "expungeAfterSeconds": 600
+    },
+    "killSelection": "YOUNGEST_FIRST",
+    "ports": [
+      10212
+    ],
+    "portDefinitions": [
+      {
+        "port": 10212,
+        "protocol": "tcp",
+        "labels": {}
+      }
+    ],
+    "requirePorts": false,
+    "versionInfo": {
+      "lastScalingAt": "2017-04-26T15:56:25.929Z",
+      "lastConfigChangeAt": "2017-04-26T15:56:25.929Z"
+    },
+    "tasksStaged": 0,
+    "tasksRunning": 3,
+    "tasksHealthy": 3,
+    "tasksUnhealthy": 0,
+    "deployments": [],
+    "tasks": [
+      {
+        "ipAddresses": [
+          {
+            "ipAddress": "172.20.1.86",
+            "protocol": "IPv4"
+          }
+        ],
+        "stagedAt": "2017-04-26T15:56:27.369Z",
+        "state": "TASK_RUNNING",
+        "ports": [
+          31428
+        ],
+        "startedAt": "2017-04-26T15:56:28.384Z",
+        "version": "2017-04-26T15:56:25.929Z",
+        "id": "dev_mesos-tools_marathon-deployer-test-app.e7fe2ee0-2a98-11e7-8dc5-02425bd4964a",
+        "appId": "/dev/mesos-tools/marathon-deployer-test-app",
+        "slaveId": "934d19a2-5ab3-4b3a-a0f5-7901586b7417-S12",
+        "host": "mesos-agent-p09.dbc.dk",
+        "healthCheckResults": [
+          {
+            "alive": true,
+            "consecutiveFailures": 0,
+            "firstSuccess": "2017-04-26T15:56:31.488Z",
+            "lastFailure": null,
+            "lastSuccess": "2017-04-26T19:03:53.161Z",
+            "lastFailureCause": null,
+            "instanceId": "dev_mesos-tools_marathon-deployer-test-app.marathon-e7fe2ee0-2a98-11e7-8dc5-02425bd4964a"
+          }
+        ]
+      },
+      {
+        "ipAddresses": [
+          {
+            "ipAddress": "172.20.1.248",
+            "protocol": "IPv4"
+          }
+        ],
+        "stagedAt": "2017-04-26T15:56:27.370Z",
+        "state": "TASK_RUNNING",
+        "ports": [
+          31622
+        ],
+        "startedAt": "2017-04-26T15:56:28.512Z",
+        "version": "2017-04-26T15:56:25.929Z",
+        "id": "dev_mesos-tools_marathon-deployer-test-app.e7fe7d01-2a98-11e7-8dc5-02425bd4964a",
+        "appId": "/dev/mesos-tools/marathon-deployer-test-app",
+        "slaveId": "934d19a2-5ab3-4b3a-a0f5-7901586b7417-S19",
+        "host": "mesos-agent-p05.dbc.dk",
+        "healthCheckResults": [
+          {
+            "alive": true,
+            "consecutiveFailures": 0,
+            "firstSuccess": "2017-04-26T15:56:31.496Z",
+            "lastFailure": null,
+            "lastSuccess": "2017-04-26T19:03:53.161Z",
+            "lastFailureCause": null,
+            "instanceId": "dev_mesos-tools_marathon-deployer-test-app.marathon-e7fe7d01-2a98-11e7-8dc5-02425bd4964a"
+          }
+        ]
+      },
+      {
+        "ipAddresses": [
+          {
+            "ipAddress": "172.20.1.246",
+            "protocol": "IPv4"
+          }
+        ],
+        "stagedAt": "2017-04-26T15:56:27.375Z",
+        "state": "TASK_RUNNING",
+        "ports": [
+          31198
+        ],
+        "startedAt": "2017-04-26T15:56:28.411Z",
+        "version": "2017-04-26T15:56:25.929Z",
+        "id": "dev_mesos-tools_marathon-deployer-test-app.e7fef232-2a98-11e7-8dc5-02425bd4964a",
+        "appId": "/dev/mesos-tools/marathon-deployer-test-app",
+        "slaveId": "934d19a2-5ab3-4b3a-a0f5-7901586b7417-S10",
+        "host": "mesos-agent-p03.dbc.dk",
+        "healthCheckResults": [
+          {
+            "alive": true,
+            "consecutiveFailures": 0,
+            "firstSuccess": "2017-04-26T15:56:31.496Z",
+            "lastFailure": null,
+            "lastSuccess": "2017-04-26T19:03:53.164Z",
+            "lastFailureCause": null,
+            "instanceId": "dev_mesos-tools_marathon-deployer-test-app.marathon-e7fef232-2a98-11e7-8dc5-02425bd4964a"
+          }
+        ]
+      }
+    ]
+  }
+}
