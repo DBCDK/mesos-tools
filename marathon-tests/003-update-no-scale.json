@@ -1,0 +1,11 @@
+{
+    "id": "/dev/mesos-tools/marathon-deployer-test-app",
+    "cpus": 0.5,
+    "mem": 75
+}
+
+
+
+
+
+

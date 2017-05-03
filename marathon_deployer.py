@@ -38,15 +38,48 @@ class Marathon:
         if current is None:
             self._create_application(application)
         else:
+            # find resulting number of instances
+            num_instances = self._get_number_of_expected_instances(application, current)
             if Marathon.is_update(application, current['app']):
                 self._update_application(application, current['app']['version'],
-                                         Marathon.is_scale_only_update(application, current['app']))
+                                         num_instances,
+                                         scale_only=Marathon.is_scale_only_update(application, current['app']),
+                )
             else:
                 self.logger.debug("comparison indicates that given %s causes no update of current %s", application,
                                   current['app'])
-                self._restart_application(application, current['app']['version'])
+                self._restart_application(application, current['app']['version'], num_instances)
+        self._wait_while_app_is_affected_by_deployment(application['id'])
         self.logger.info("deployment operation finished for %s", application['id'])
 
+    def _get_number_of_expected_instances(self, application, current):
+        if 'instances' in application:
+            num_instances = application['instances']
+        else:
+            num_instances = current['app']['instances']
+        return num_instances
+        
+    def _wait_while_app_is_affected_by_deployment(self, application_id):
+        self.logger.info("Waiting for app to be unaffected by deployments")
+        affected = True
+        while affected:
+            response = Marathon.http_get("/".join([self.baseurl, 'v2', 'deployments']), self.cookies)
+            status_code = response.status_code
+            if status_code != requests.codes.OK:
+                raise Exception("{} error while fetching application {} - {}"
+                                .format(status_code, application_id, response.text))
+            active_deployments = json.loads(response.text)
+
+            # Assume the app is not affected by any deployments
+            affected = False
+            # set boolean if the app actually is affected by a deployment
+            for deployment in active_deployments:
+                if application_id in deployment['affectedApps']:
+                    affected = True
+            time.sleep(1)
+        return
+        
+        
     def _get_application(self, application_id):
         response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
         status_code = response.status_code
@@ -71,22 +104,23 @@ class Marathon:
             raise Exception("{} error during creation of application {} - {}"
                             .format(status_code, application_id, response.text))
 
-    def _update_application(self, application, old_version, scale_only=False):
+    def _update_application(self, application, old_version, num_instances, scale_only=False):
         application_id = application['id']
-        self.logger.info("updating version '%s' of application %s", old_version, application_id)
+        self.logger.info("updating version '%s' of application %s. Scale_only: %s",
+                         old_version, application_id, scale_only)
         response = Marathon.http_put("/".join([self.baseurl, 'v2', 'apps', application['id']]), application,
                                      self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
             deployment = json.loads(response.text)
             self._wait_for_new_application_version(application_id, deployment['version'])
-            self._wait_for_application_instances(application_id, deployment['version'], application['instances'],
-                                                 scale_only)
+            self._wait_for_application_instances(application_id, deployment['version'],
+                                                 num_instances, scale_only)
         else:
             raise Exception("{} error during update of application {} - {}"
                             .format(status_code, application_id, response.text))
 
-    def _restart_application(self, application, old_version):
+    def _restart_application(self, application, old_version, num_instances):
         application_id = application['id']
         self.logger.info("restarting version '%s' of application %s", old_version, application_id)
         response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps', application['id'], 'restart']), None,
@@ -95,7 +129,7 @@ class Marathon:
         if status_code == requests.codes.OK:
             deployment = json.loads(response.text)
             self._wait_for_new_application_version(application_id, deployment['version'])
-            self._wait_for_application_instances(application_id, deployment['version'], application['instances'])
+            self._wait_for_application_instances(application_id, deployment['version'], num_instances)
         else:
             raise Exception("{} error during restart of application {} - {}"
                             .format(status_code, application_id, response.text))
@@ -114,6 +148,10 @@ class Marathon:
                          application_instances, application_id)
         while True:
             current = self._get_application(application_id)
+            # If there are a different number of tasks than expected instances we are clearly not done.
+            if len(current['app']['tasks']) != int(application_instances):
+                time.sleep(1)
+                continue
             instances_ok = 0
             for task in current['app']['tasks']:
                 version_ok = True if scale_only else task['version'] >= application_version
