@@ -55,10 +55,11 @@ class Marathon:
     def deploy_group(self, applications):
         if 'apps' not in applications or type(applications['apps']) != list:
             self.deploy(applications)
-        for application in applications['apps']:
-            application["id"] = self._merge_group_id_and_app_id(applications["id"], application["id"])
-            self.logger.debug("Rewriting application id to: " + application['id'])
-            self.deploy(application)
+        else:
+            for application in applications['apps']:
+                application["id"] = self._merge_group_id_and_app_id(applications["id"], application["id"])
+                self.logger.debug("Rewriting application id to: " + application['id'])
+                self.deploy(application)
 
     def _merge_group_id_and_app_id(self, group_id, application_id):
         self.logger.debug("Merging group id '%s' with application id '%s'", group_id, application_id)
