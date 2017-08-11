@@ -9,20 +9,20 @@ import argparse
 import copy
 import json
 import logging
-import os
-import requests
 import sys
 import time
 import warnings
 
+import os
+import requests
 from requests.packages.urllib3 import exceptions
 
 logging.getLogger('Marathon').addHandler(logging.NullHandler())
 
 
 class Marathon:
-    """ Class for Mesos application orchestration using Marathon 
-    
+    """ Class for Mesos application orchestration using Marathon
+
         This class logs through a logger named 'Marathon'
     """
 
@@ -34,6 +34,7 @@ class Marathon:
         self.logger = logging.getLogger('Marathon')
 
     def deploy(self, application):
+        self.logger.debug("Deploying application with id '%s'", application['id'])
         current = self._get_application(application['id'])
         if current is None:
             self._create_application(application)
@@ -43,8 +44,7 @@ class Marathon:
             if Marathon.is_update(application, current['app']):
                 self._update_application(application, current['app']['version'],
                                          num_instances,
-                                         scale_only=Marathon.is_scale_only_update(application, current['app']),
-                )
+                                         scale_only=Marathon.is_scale_only_update(application, current['app']))
             else:
                 self.logger.debug("comparison indicates that given %s causes no update of current %s", application,
                                   current['app'])
@@ -52,13 +52,35 @@ class Marathon:
         self._wait_while_app_is_affected_by_deployment(application['id'])
         self.logger.info("deployment operation finished for %s", application['id'])
 
+    def deploy_group(self, applications):
+        if 'apps' not in applications or type(applications['apps']) != list:
+            self.deploy(applications)
+        else:
+            for application in applications['apps']:
+                application["id"] = self._merge_group_id_and_app_id(applications["id"], application["id"])
+                self.logger.debug("Rewriting application id to: " + application['id'])
+                self.deploy(application)
+
+    def _merge_group_id_and_app_id(self, group_id, application_id):
+        self.logger.debug("Merging group id '%s' with application id '%s'", group_id, application_id)
+        new_app_id = group_id
+        if not new_app_id.endswith("/"):
+            new_app_id += "/"
+        slash_idx = application_id.rfind("/")
+        if slash_idx > -1:
+            new_app_id += application_id[slash_idx + 1:]
+        else:
+            new_app_id += application_id
+        self.logger.debug("New application id '%s'", new_app_id)
+        return new_app_id
+
     def _get_number_of_expected_instances(self, application, current):
         if 'instances' in application:
             num_instances = application['instances']
         else:
             num_instances = current['app']['instances']
         return num_instances
-        
+
     def _wait_while_app_is_affected_by_deployment(self, application_id):
         self.logger.info("Waiting for app to be unaffected by deployments")
         affected = True
@@ -78,8 +100,7 @@ class Marathon:
                     affected = True
             time.sleep(1)
         return
-        
-        
+
     def _get_application(self, application_id):
         response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
         status_code = response.status_code
@@ -315,7 +336,7 @@ def main():
     try:
         json_data = json.load(args.json)
         marathon = Marathon(args.baseurl, args.access_token)
-        marathon.deploy(json_data)
+        marathon.deploy_group(json_data)
     except Exception as e:
         logger.error(e, exc_info=True)
         sys.exit(1)

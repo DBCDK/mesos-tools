@@ -1,0 +1,17 @@
+{
+    "id": "/dev/mesos-tools",
+    "apps": [
+        {
+            "id": "marathon-deployer-test-app-1",
+            "instances": 0
+        },
+        {
+            "id": "marathon-deployer-test-app-2",
+            "instances": 0
+        },
+        {
+            "id": "marathon-deployer-test-app-3",
+            "instances": 0
+        }
+    ]
+}

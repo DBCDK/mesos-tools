@@ -1,0 +1,21 @@
+{
+    "id": "/dev/mesos-tools",
+    "apps": [
+        {
+            "id": "marathon-deployer-test-app-1",
+            "cpus": 0.2,
+            "mem": 85
+        },
+        {
+            "id": "marathon-deployer-test-app-2",
+            "cpus": 0.2,
+            "mem": 80
+        },
+        {
+            "id": "marathon-deployer-test-app-3",
+            "cpus": 0.2,
+            "mem": 55
+        }
+    ]
+}
+

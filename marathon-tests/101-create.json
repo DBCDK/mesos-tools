@@ -1,0 +1,108 @@
+{
+    "id": "/dev/mesos-tools",
+    "apps": [
+        {
+            "cmd": "env && python3 -m http.server $PORT0",
+            "constraints": [
+                ["net","CLUSTER","prod"],
+                ["hostname","UNIQUE"]
+            ],
+            "container": {
+                "docker": {
+                    "image": "docker.dbc.dk/dbc-python3:latest"
+                },
+                "type": "DOCKER"
+            },
+            "cpus": 0.1,
+            "healthChecks": [
+                {
+                    "gracePeriodSeconds": 3,
+                    "intervalSeconds": 10,
+                    "maxConsecutiveFailures": 3,
+                    "path": "/",
+                    "portIndex": 0,
+                    "protocol": "HTTP",
+                    "timeoutSeconds": 5
+                }
+            ],
+            "id": "marathon-deployer-test-app-1",
+            "instances": 1,
+            "mem": 50,
+            "ports": [
+                0
+            ],
+            "upgradeStrategy": {
+                "minimumHealthCapacity": 0.5,
+                "maximumOverCapacity": 0.5
+            }
+        },{
+            "cmd": "env && python3 -m http.server $PORT0",
+            "constraints": [
+                ["net","CLUSTER","prod"],
+                ["hostname","UNIQUE"]
+            ],
+            "container": {
+                "docker": {
+                    "image": "docker.dbc.dk/dbc-python3:latest"
+                },
+                "type": "DOCKER"
+            },
+            "cpus": 0.1,
+            "healthChecks": [
+                {
+                    "gracePeriodSeconds": 3,
+                    "intervalSeconds": 10,
+                    "maxConsecutiveFailures": 3,
+                    "path": "/",
+                    "portIndex": 0,
+                    "protocol": "HTTP",
+                    "timeoutSeconds": 5
+                }
+            ],
+            "id": "marathon-deployer-test-app-2",
+            "instances": 1,
+            "mem": 50,
+            "ports": [
+                0
+            ],
+            "upgradeStrategy": {
+                "minimumHealthCapacity": 0.5,
+                "maximumOverCapacity": 0.5
+            }
+        },{
+            "cmd": "env && python3 -m http.server $PORT0",
+            "constraints": [
+                ["net","CLUSTER","prod"],
+                ["hostname","UNIQUE"]
+            ],
+            "container": {
+                "docker": {
+                    "image": "docker.dbc.dk/dbc-python3:latest"
+                },
+                "type": "DOCKER"
+            },
+            "cpus": 0.1,
+            "healthChecks": [
+                {
+                    "gracePeriodSeconds": 3,
+                    "intervalSeconds": 10,
+                    "maxConsecutiveFailures": 3,
+                    "path": "/",
+                    "portIndex": 0,
+                    "protocol": "HTTP",
+                    "timeoutSeconds": 5
+                }
+            ],
+            "id": "marathon-deployer-test-app-3",
+            "instances": 1,
+            "mem": 50,
+            "ports": [
+                0
+            ],
+            "upgradeStrategy": {
+                "minimumHealthCapacity": 0.5,
+                "maximumOverCapacity": 0.5
+            }
+        }
+    ]
+}
