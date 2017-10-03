@@ -23,3 +23,10 @@ class TestConfigProducer(unittest.TestCase):
         expected_result = {"a": 1, "b": {"c": 4, "d": 3}}
         actual_result = marathon_config_producer.merge_config_stack(stack)
         self.assertEqual(expected_result, actual_result)
+
+    def test_fill_template(self):
+        template = '{"a": "${key1}", "b": "${key2}"}'
+        expected_result = '{"a": "value1", "b": "value2"}'
+        actual_result = marathon_config_producer.fill_template(template,
+            key1="value1", key2="value2")
+        self.assertEqual(expected_result, actual_result)

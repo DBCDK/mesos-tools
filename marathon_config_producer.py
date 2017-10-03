@@ -6,6 +6,7 @@ import argparse
 import copy
 import json
 import os
+import re
 import sys
 
 class ConfigException(Exception):
@@ -67,3 +68,9 @@ def merge_config_stack(config_stack):
         else:
             dest = merge(data, dest)
     return dest
+
+def fill_template(template, **kwargs):
+    for key, value in kwargs.items():
+        # replace ${key} -> value
+        template = re.sub("\${{{}}}".format(key), value, template)
+    return template
