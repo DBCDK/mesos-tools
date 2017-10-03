@@ -16,6 +16,9 @@ def setup_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("root", help="root of config directory")
     parser.add_argument("config_file", help="marathon json file")
+    parser.add_argument("-o", "--output",
+        help="file to write resulting config json to, defaults to standard out",
+        default="-")
     args = parser.parse_args()
     return args
 
@@ -74,3 +77,25 @@ def fill_template(template, **kwargs):
         # replace ${key} -> value
         template = re.sub("\${{{}}}".format(key), value, template)
     return template
+
+def main():
+    args = setup_args()
+    if not os.path.isfile(args.config_file):
+        config_file = get_config_file(args.root, args.config_file)
+        if config_file is None:
+            print("couldn't find config {}".format(config_file),
+                file=sys.stderr)
+            sys.exit(1)
+        args.config_file = config_file
+    config_stack = iterate_extend_hierarchy(args.root, args.config_file)
+    config_json = merge_config_stack(config_stack)
+    json_output = "{}\n".format(json.dumps(config_json, sort_keys=True,
+        indent=4))
+    if args.output == "-":
+        sys.stdout.write(json_output)
+    else:
+        with open(args.output, "w") as output_file:
+            output_file.write(json_output)
+
+if __name__ == "__main__":
+    main()
