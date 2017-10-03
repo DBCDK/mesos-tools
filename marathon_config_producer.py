@@ -12,6 +12,19 @@ import sys
 class ConfigException(Exception):
     pass
 
+class StoreTemplateKeyValuePairsAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        if self.nargs is None:
+            values = [values]
+        for value in values:
+            try:
+                key, value = value.split("=")
+                if getattr(namespace, self.dest) is None:
+                    setattr(namespace, self.dest, {})
+                getattr(namespace, self.dest)[key] = value
+            except ValueError as e:
+                setattr(namespace, argparse._UNRECOGNIZED_ARGS_ATTR, value)
+
 def setup_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("root", help="root of config directory")
@@ -19,6 +32,10 @@ def setup_args():
     parser.add_argument("-o", "--output",
         help="file to write resulting config json to, defaults to standard out",
         default="-")
+    parser.add_argument("--template-keys", nargs="+",
+        action=StoreTemplateKeyValuePairsAction,
+        help="templated keys to replace with a given value. "
+        "e.g. `--template-keys key=value` will replace ${key} with value")
     args = parser.parse_args()
     return args
 
@@ -91,6 +108,8 @@ def main():
     config_json = merge_config_stack(config_stack)
     json_output = "{}\n".format(json.dumps(config_json, sort_keys=True,
         indent=4))
+    if args.template_keys is not None:
+        json_output = fill_template(json_output, **args.template_keys)
     if args.output == "-":
         sys.stdout.write(json_output)
     else:
