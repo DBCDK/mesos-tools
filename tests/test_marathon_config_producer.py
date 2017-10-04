@@ -30,3 +30,58 @@ class TestConfigProducer(unittest.TestCase):
         actual_result = marathon_config_producer.fill_template(template,
             key1="value1", key2="value2")
         self.assertEqual(expected_result, actual_result)
+
+    def test_merge_lists(self):
+        src = {"a": [
+            {
+                "key": "key1",
+                "value": "blah",
+                "override": "key"
+            },
+            {
+                "key": "key3",
+                "value": "value3"
+            }]}
+        dest = {"a": [
+            {
+                "key": "key1",
+                "value": "value1"
+            },
+            {
+                "key": "key2",
+                "value": "value2"
+            }]}
+        expected_result = {"a": [
+            {
+                "key": "key1",
+                "value": "blah"
+            }, {
+                "key": "key2",
+                "value": "value2"
+            }, {
+                "key": "key3",
+                "value": "value3"
+            }]}
+        actual_result = marathon_config_producer.merge(src, dest)
+        self.assertEqual(expected_result, actual_result)
+
+    def test_merge_lists_no_value_throws_exception(self):
+        src = [
+            {
+                "key": "key",
+                "value": "value",
+                "override": "key"
+            }]
+        dest = [
+            {
+                "key": "key",
+                "value1": "value1"
+            }]
+        with self.assertRaises(marathon_config_producer.ConfigException):
+            marathon_config_producer.merge_lists(src, dest)
+
+    def test_merge_lists_not_list_throws_exception(self):
+        src = {}
+        dest = []
+        with self.assertRaises(marathon_config_producer.ConfigException):
+            marathon_config_producer.merge_lists(src, dest)

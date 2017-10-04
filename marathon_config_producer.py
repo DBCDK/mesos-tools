@@ -68,12 +68,47 @@ def iterate_extend_hierarchy(root_dir, config_path):
             extending_data = get_extending_config_data(root_dir, extending_data)
         return config_stack
 
+def merge_lists(src, dest):
+    if not (isinstance(src, list) and isinstance(dest, list)):
+        raise ConfigException("both source and destination must be lists.\n"
+            "source type: {}\ndestination type: {}".format(type(src),
+            type(dest)))
+    new_dest = copy.deepcopy(dest)
+    for element in src:
+        # if the given element is an object with an override key, look for
+        # an object in the destination list with a keyname corresponding to
+        # the value specified by the override key and exchange the value of
+        # the "value" field in the destination object with the value of the
+        # "value" field in the source object.
+        if isinstance(element, dict) and "override" in element:
+            for dest_element in new_dest:
+                if element["override"] in dest_element and dest_element[
+                        element["override"]] == element[element["override"]]:
+
+                    if not ("value" in element and "value" in dest_element):
+                        raise ConfigException("source contains \"override\" "
+                            "but \"value\" not found in either source or "
+                            "destination.\nsrc: {}\ndest: {}".format(str(
+                            element), str(dest_element)))
+
+                    dest_element["value"] = element["value"]
+                    break
+        else:
+            try:
+                new_dest.index(element)
+            except ValueError:
+                # element is not in list
+                new_dest.append(element)
+    return new_dest
+
 def merge(src, dest):
     new_dest = copy.deepcopy(dest)
     for key in src:
         if key in dest:
             if isinstance(src[key], dict) and isinstance(dest[key], dict):
                 new_dest[key] = merge(src[key], dest[key])
+            elif isinstance(src[key], list) and isinstance(dest[key], list):
+                new_dest[key] = merge_lists(src[key], dest[key])
             else:
                 new_dest[key] = src[key]
         else:
