@@ -130,6 +130,20 @@ def fill_template(template, **kwargs):
         template = re.sub("\${{{}}}".format(key), value, template)
     return template
 
+def make_config_json(root, config_file_path, template_keys=None):
+    try:
+        config_stack = iterate_extend_hierarchy(root, config_file_path)
+        config_json = merge_config_stack(config_stack)
+        json_output = "{}\n".format(json.dumps(config_json, sort_keys=True,
+            indent=4))
+        if template_keys is not None:
+            json_output = fill_template(json_output, **template_keys)
+        return json_output
+    except json.decoder.JSONDecodeError as e:
+        print("error decoding json file {}: {}".format(config_file_path, e),
+            file=sys.stderr)
+        return None
+
 def main():
     args = setup_args()
     if not os.path.isfile(args.config_file):
@@ -139,12 +153,11 @@ def main():
                 file=sys.stderr)
             sys.exit(1)
         args.config_file = config_file
-    config_stack = iterate_extend_hierarchy(args.root, args.config_file)
-    config_json = merge_config_stack(config_stack)
-    json_output = "{}\n".format(json.dumps(config_json, sort_keys=True,
-        indent=4))
-    if args.template_keys is not None:
-        json_output = fill_template(json_output, **args.template_keys)
+    json_output = make_config_json(args.root, args.config_file,
+        args.template_keys)
+    if json_output is None:
+        print("couldn't make config json", file=sys.stderr)
+        sys.exit(1)
     if args.output == "-":
         sys.stdout.write(json_output)
     else:
