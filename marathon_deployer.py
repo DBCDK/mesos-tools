@@ -85,7 +85,7 @@ class Marathon:
         self.logger.info("Waiting for app to be unaffected by deployments")
         affected = True
         while affected:
-            response = Marathon.http_get("/".join([self.baseurl, 'v2', 'deployments']), self.cookies)
+            response = http_get("/".join([self.baseurl, 'v2', 'deployments']), self.cookies)
             status_code = response.status_code
             if status_code != requests.codes.OK:
                 raise Exception("{} error while fetching application {} - {}"
@@ -102,7 +102,7 @@ class Marathon:
         return
 
     def _get_application(self, application_id):
-        response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
+        response = http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
             return json.loads(response.text)
@@ -115,7 +115,7 @@ class Marathon:
     def _create_application(self, application):
         application_id = application['id']
         self.logger.info("creating application %s", application_id)
-        response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
+        response = http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK or status_code == requests.codes.CREATED:
             deployment = json.loads(response.text)
@@ -129,7 +129,7 @@ class Marathon:
         application_id = application['id']
         self.logger.info("updating version '%s' of application %s. Scale_only: %s",
                          old_version, application_id, scale_only)
-        response = Marathon.http_put("/".join([self.baseurl, 'v2', 'apps', application['id']]), application,
+        response = http_put("/".join([self.baseurl, 'v2', 'apps', application['id']]), application,
                                      self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
@@ -144,7 +144,7 @@ class Marathon:
     def _restart_application(self, application, old_version, num_instances):
         application_id = application['id']
         self.logger.info("restarting version '%s' of application %s", old_version, application_id)
-        response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps', application['id'], 'restart']), None,
+        response = http_post("/".join([self.baseurl, 'v2', 'apps', application['id'], 'restart']), None,
                                       self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
@@ -278,28 +278,23 @@ class Marathon:
                     return False
         return True
 
-    @staticmethod
-    def http_post(url, json_data, cookies):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.post(url, cookies=cookies, json=json_data, verify=False,
-                                     headers={'content-type': 'application/json'})
-        return response
+def http_post(url, json_data, cookies):
+    return base_http_method(requests.post, url, cookies=cookies,
+        json=json_data, verify=False, headers={'content-type':
+        'application/json'})
 
-    @staticmethod
-    def http_put(url, json_data, cookies):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.put(url, cookies=cookies, json=json_data, verify=False)
-        return response
+def http_put(url, json_data, cookies):
+    return base_http_method(requests.put, url, cookies=cookies,
+        json=json_data, verify=False)
 
-    @staticmethod
-    def http_get(url, cookies):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.get(url, cookies=cookies, verify=False)
-        return response
+def http_get(url, cookies):
+    return base_http_method(requests.get, url, cookies=cookies,
+        verify=False)
 
+def base_http_method(method, url, **kwargs):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
+        return method(url, **kwargs)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
