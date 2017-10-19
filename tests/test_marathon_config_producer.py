@@ -85,3 +85,72 @@ class TestConfigProducer(unittest.TestCase):
         dest = []
         with self.assertRaises(marathon_config_producer.ConfigException):
             marathon_config_producer.merge_lists(src, dest)
+
+    def test_make_hierarchy(self):
+        instances = [
+            {
+                "id": "/parent/child1/instance1",
+                "container": {}
+            },
+            {
+                "id": "/parent/child2/instance2",
+                "container": {}
+            }
+        ]
+        expected_result = {
+            "id": "parent",
+            "groups": [
+                {
+                    "id": "child1",
+                    "groups": [],
+                    "apps": [
+                        {
+                            "id": "/parent/child1/instance1",
+                            "container": {}
+                        }
+                    ]
+                },
+                {
+                    "id": "child2",
+                    "groups": [],
+                    "apps": [
+                        {
+                            "id": "/parent/child2/instance2",
+                            "container": {}
+                        }
+                    ]
+                }
+            ]
+        }
+        actual_result = marathon_config_producer.make_hierarchy_dict(
+            "parent", instances, False)
+        self.assertEqual(expected_result, actual_result)
+
+    def test_make_hierarchy_flat_hierarchy(self):
+        instances = [
+            {
+                "id": "/parent/child1/instance1",
+                "container": {}
+            },
+            {
+                "id": "/parent/child2/instance2",
+                "container": {}
+            }
+        ]
+        expected_result = {
+            "id": "parent",
+            "apps": [
+                {
+                    "id": "parent-child1-instance1",
+                    "container": {}
+                },
+                {
+                    "id": "parent-child2-instance2",
+                    "container": {}
+                }
+            ],
+            "groups": []
+        }
+        actual_result = marathon_config_producer.make_hierarchy_dict(
+            "parent", instances, True)
+        self.assertEqual(expected_result, actual_result)
