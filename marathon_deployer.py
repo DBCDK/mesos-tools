@@ -19,6 +19,8 @@ from requests.packages.urllib3 import exceptions
 
 logging.getLogger('Marathon').addHandler(logging.NullHandler())
 
+class MarathonException(Exception):
+    pass
 
 class Marathon:
     """ Class for Mesos application orchestration using Marathon
@@ -60,6 +62,41 @@ class Marathon:
                 application["id"] = self._merge_group_id_and_app_id(applications["id"], application["id"])
                 self.logger.debug("Rewriting application id to: " + application['id'])
                 self.deploy(application)
+
+    def delete_group(self, group_name):
+        response = http_get("/".join([self.baseurl, "v2",
+            "groups", group_name]), self.cookies)
+        try:
+            js = response.json()
+            if "groups" not in js:
+                raise MarathonException("no groups found in reponse")
+            stack = [js["groups"]]
+            groups_to_delete = [group_name]
+            while stack:
+                groups = stack.pop()
+                for group in groups:
+                    if "groups" in group:
+                        groups_to_delete.append(group["id"])
+                        stack.append(group["groups"])
+            for group in groups_to_delete[::-1]:
+                # writing an empty group is necessary since marathon cannot
+                # delete groups with content
+                js = json.loads("{{\"id\": \"{}\", \"apps\": []}}".format(group))
+                response = http_put("/".join([self.baseurl, "v2", "groups"]), js,
+                    self.cookies, {"force": "true"})
+                if response.status_code != requests.codes.OK:
+                    raise MarathonException("{} error while deploying "
+                        "empty group {} - {}".format(response.status_code,
+                        group, response.text))
+                response = http_delete("/".join([self.baseurl, "v2", "groups",
+                    group]), self.cookies)
+                if response.status_code != requests.codes.OK:
+                    raise MarathonException("{} error while deleting group "
+                        "{} - {}".format(response.status_code, group,
+                        response.text))
+        except ValueError as e:
+            raise MarathonException("caught exception deleting group: {}"
+                .format(str(e)))
 
     def _merge_group_id_and_app_id(self, group_id, application_id):
         self.logger.debug("Merging group id '%s' with application id '%s'", group_id, application_id)
@@ -283,12 +320,16 @@ def http_post(url, json_data, cookies):
         json=json_data, verify=False, headers={'content-type':
         'application/json'})
 
-def http_put(url, json_data, cookies):
+def http_put(url, json_data, cookies, params=None):
     return base_http_method(requests.put, url, cookies=cookies,
-        json=json_data, verify=False)
+        json=json_data, verify=False, params=params)
 
 def http_get(url, cookies):
     return base_http_method(requests.get, url, cookies=cookies,
+        verify=False)
+
+def http_delete(url, cookies):
+    return base_http_method(requests.delete, url, cookies=cookies,
         verify=False)
 
 def base_http_method(method, url, **kwargs):
@@ -300,8 +341,9 @@ def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
     parser.add_argument('-b', '--baseurl', required=True, help='base URL of marathon service')
     parser.add_argument('-a', '--access-token', required=True, help='cookie for authentication on marathon')
-    parser.add_argument('json', help='file containing marathon application JSON',
-                        type=argparse.FileType('r'), default=sys.stdin)
+    parser.add_argument("action", metavar="deploy|delete",
+        help="\"deploy\" takes a marathon json file to deploy and "
+            "\"delete\" takes a group name to delete as argument", nargs=2)
     return parser.parse_args()
 
 
@@ -329,9 +371,13 @@ def main():
     logger = create_logger()
 
     try:
-        json_data = json.load(args.json)
         marathon = Marathon(args.baseurl, args.access_token)
-        marathon.deploy_group(json_data)
+        if args.action[0] == "deploy":
+            with open(args.action[1]) as json_file:
+                json_data = json.load(json_file)
+                marathon.deploy_group(json_data)
+        elif args.action[0] == "delete":
+            marathon.delete_group(args.action[1])
     except Exception as e:
         logger.error(e, exc_info=True)
         sys.exit(1)
