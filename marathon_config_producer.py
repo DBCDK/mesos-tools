@@ -42,7 +42,7 @@ def setup_args():
         "e.g. `--template-keys key=value` will replace ${key} with value")
     parser.add_argument("--flatten_hierarchy", action="store_true",
         help="flatten the hierarchy when producing a group json file. "
-            "/parent/child/granchild becomes parent-child-grandchild")
+            "/parent/child/grandchild becomes parent-child-grandchild")
     args = parser.parse_args()
     return args
 
