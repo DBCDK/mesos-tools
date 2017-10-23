@@ -19,6 +19,8 @@ from requests.packages.urllib3 import exceptions
 
 logging.getLogger('Marathon').addHandler(logging.NullHandler())
 
+class MarathonException(Exception):
+    pass
 
 class Marathon:
     """ Class for Mesos application orchestration using Marathon
@@ -61,6 +63,41 @@ class Marathon:
                 self.logger.debug("Rewriting application id to: " + application['id'])
                 self.deploy(application)
 
+    def delete_group(self, group_name):
+        response = http_get("/".join([self.baseurl, "v2",
+            "groups", group_name]), self.cookies)
+        try:
+            js = response.json()
+            if "groups" not in js:
+                raise MarathonException("no groups found in reponse")
+            stack = [js["groups"]]
+            groups_to_delete = [group_name]
+            while stack:
+                groups = stack.pop()
+                for group in groups:
+                    if "groups" in group:
+                        groups_to_delete.append(group["id"])
+                        stack.append(group["groups"])
+            for group in groups_to_delete[::-1]:
+                # writing an empty group is necessary since marathon cannot
+                # delete groups with content
+                js = json.loads("{{\"id\": \"{}\", \"apps\": []}}".format(group))
+                response = http_put("/".join([self.baseurl, "v2", "groups"]), js,
+                    self.cookies, {"force": "true"})
+                if response.status_code != requests.codes.OK:
+                    raise MarathonException("{} error while deploying "
+                        "empty group {} - {}".format(response.status_code,
+                        group, response.text))
+                response = http_delete("/".join([self.baseurl, "v2", "groups",
+                    group]), self.cookies)
+                if response.status_code != requests.codes.OK:
+                    raise MarathonException("{} error while deleting group "
+                        "{} - {}".format(response.status_code, group,
+                        response.text))
+        except ValueError as e:
+            raise MarathonException("caught exception deleting group: {}"
+                .format(str(e)))
+
     def _merge_group_id_and_app_id(self, group_id, application_id):
         self.logger.debug("Merging group id '%s' with application id '%s'", group_id, application_id)
         new_app_id = group_id
@@ -85,7 +122,7 @@ class Marathon:
         self.logger.info("Waiting for app to be unaffected by deployments")
         affected = True
         while affected:
-            response = Marathon.http_get("/".join([self.baseurl, 'v2', 'deployments']), self.cookies)
+            response = http_get("/".join([self.baseurl, 'v2', 'deployments']), self.cookies)
             status_code = response.status_code
             if status_code != requests.codes.OK:
                 raise Exception("{} error while fetching application {} - {}"
@@ -102,7 +139,7 @@ class Marathon:
         return
 
     def _get_application(self, application_id):
-        response = Marathon.http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
+        response = http_get("/".join([self.baseurl, 'v2', 'apps', application_id]), self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
             return json.loads(response.text)
@@ -115,7 +152,7 @@ class Marathon:
     def _create_application(self, application):
         application_id = application['id']
         self.logger.info("creating application %s", application_id)
-        response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
+        response = http_post("/".join([self.baseurl, 'v2', 'apps']), application, self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK or status_code == requests.codes.CREATED:
             deployment = json.loads(response.text)
@@ -129,7 +166,7 @@ class Marathon:
         application_id = application['id']
         self.logger.info("updating version '%s' of application %s. Scale_only: %s",
                          old_version, application_id, scale_only)
-        response = Marathon.http_put("/".join([self.baseurl, 'v2', 'apps', application['id']]), application,
+        response = http_put("/".join([self.baseurl, 'v2', 'apps', application['id']]), application,
                                      self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
@@ -144,7 +181,7 @@ class Marathon:
     def _restart_application(self, application, old_version, num_instances):
         application_id = application['id']
         self.logger.info("restarting version '%s' of application %s", old_version, application_id)
-        response = Marathon.http_post("/".join([self.baseurl, 'v2', 'apps', application['id'], 'restart']), None,
+        response = http_post("/".join([self.baseurl, 'v2', 'apps', application['id'], 'restart']), None,
                                       self.cookies)
         status_code = response.status_code
         if status_code == requests.codes.OK:
@@ -278,35 +315,35 @@ class Marathon:
                     return False
         return True
 
-    @staticmethod
-    def http_post(url, json_data, cookies):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.post(url, cookies=cookies, json=json_data, verify=False,
-                                     headers={'content-type': 'application/json'})
-        return response
+def http_post(url, json_data, cookies):
+    return base_http_method(requests.post, url, cookies=cookies,
+        json=json_data, verify=False, headers={'content-type':
+        'application/json'})
 
-    @staticmethod
-    def http_put(url, json_data, cookies):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.put(url, cookies=cookies, json=json_data, verify=False)
-        return response
+def http_put(url, json_data, cookies, params=None):
+    return base_http_method(requests.put, url, cookies=cookies,
+        json=json_data, verify=False, params=params)
 
-    @staticmethod
-    def http_get(url, cookies):
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
-            response = requests.get(url, cookies=cookies, verify=False)
-        return response
+def http_get(url, cookies):
+    return base_http_method(requests.get, url, cookies=cookies,
+        verify=False)
 
+def http_delete(url, cookies):
+    return base_http_method(requests.delete, url, cookies=cookies,
+        verify=False)
+
+def base_http_method(method, url, **kwargs):
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", exceptions.InsecureRequestWarning)
+        return method(url, **kwargs)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='Script for Mesos application orchestration using Marathon')
     parser.add_argument('-b', '--baseurl', required=True, help='base URL of marathon service')
     parser.add_argument('-a', '--access-token', required=True, help='cookie for authentication on marathon')
-    parser.add_argument('json', help='file containing marathon application JSON',
-                        type=argparse.FileType('r'), default=sys.stdin)
+    parser.add_argument("action", metavar="deploy|delete",
+        help="\"deploy\" takes a marathon json file to deploy and "
+            "\"delete\" takes a group name to delete as argument", nargs=2)
     return parser.parse_args()
 
 
@@ -334,9 +371,13 @@ def main():
     logger = create_logger()
 
     try:
-        json_data = json.load(args.json)
         marathon = Marathon(args.baseurl, args.access_token)
-        marathon.deploy_group(json_data)
+        if args.action[0] == "deploy":
+            with open(args.action[1]) as json_file:
+                json_data = json.load(json_file)
+                marathon.deploy_group(json_data)
+        elif args.action[0] == "delete":
+            marathon.delete_group(args.action[1])
     except Exception as e:
         logger.error(e, exc_info=True)
         sys.exit(1)
