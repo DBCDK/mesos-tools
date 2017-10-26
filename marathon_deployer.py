@@ -378,6 +378,9 @@ def main():
                 marathon.deploy_group(json_data)
         elif args.action[0] == "delete":
             marathon.delete_group(args.action[1])
+        else:
+            raise MarathonException("unknown action: {}".format(
+                args.action[0]))
     except Exception as e:
         logger.error(e, exc_info=True)
         sys.exit(1)
