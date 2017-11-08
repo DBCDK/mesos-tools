@@ -4,7 +4,7 @@
 
 import unittest
 
-import marathon_config_producer
+from mesos_tools import marathon_config_producer
 
 class TestConfigProducer(unittest.TestCase):
     def test_merge(self):
