@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*-
 # -*- mode: python -*-
 from setuptools import setup, find_packages
+import glob
 
 ## See the following pages for keywords possibilities for setup keywords, etc.
 # https://packaging.python.org/
@@ -13,9 +14,10 @@ setup(name='mesos-tools',
       package_dir={'': 'src'},
       packages=find_packages(where='src'),
       description='Basic utilities used in mesos/marathon deployment',
+      scripts=glob.glob('src/bin/*'),
       test_suite='..tests',
-      provides=['mesos-tools'],
-      install_requires=[],
+      install_requires=['requests'],
+      provides=['mesos_tools'],
       maintainer="jda",
       maintainer_email="jda@dbc.dk",
       zip_safe=False)
