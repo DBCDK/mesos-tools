@@ -9,7 +9,7 @@ import copy
 import json
 import os
 import unittest
-from marathon_deployer import Marathon
+from mesos_tools.marathon_deployer import Marathon
 
 
 class TestMarathon(unittest.TestCase):

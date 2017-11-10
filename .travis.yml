@@ -1,0 +1,19 @@
+language: python
+sudo: false
+
+env:
+  - PACKAGE=mesos-tools
+
+python:
+  - "3.5"
+
+# command to install dependencies
+install:
+  - pip install pytest
+  - pip install -e .
+
+# command to run tests
+script:
+  - pytest tests
+  - python setup.py egg_info --tag-build=".${TRAVIS_BUILD_NUMBER}" bdist_wheel
+
