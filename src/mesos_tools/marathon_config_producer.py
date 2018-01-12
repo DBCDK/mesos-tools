@@ -28,14 +28,16 @@ class StoreTemplateKeyValuePairsAction(argparse.Action):
 def setup_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("root", help="root of config directory")
-    parser.add_argument("action", metavar="single|group", nargs=2,
-        help="produce a marathon config json file containing either a "
-            "single application or a hierarchy of groups. \"single\" takes "
-            "an instance json file and \"group\" takes a name for the "
-            "top-level group as argument")
+    parser.add_argument("input", help="corresponding to the value for "
+        "--mode, input should either be an application json file or a "
+        "group name")
     parser.add_argument("-o", "--output",
         help="file to write resulting config json to, defaults to standard out",
         default="-")
+    parser.add_argument("-m", "--mode", help="single or group deploy. "
+        "\"single\" takes an instance json file and \"group\" takes a name for the "
+        "top-level group as input. defaults to single",
+        metavar="single|group", default="single")
     parser.add_argument("--template-keys", nargs="+",
         action=StoreTemplateKeyValuePairsAction,
         help="templated keys to replace with a given value. "
@@ -216,18 +218,18 @@ def main():
     args = setup_args()
     try:
         config_json = None
-        if args.action[0] == "group":
-            config_json = collect_instance_files(args.action[1], args.root,
+        if args.mode == "group":
+            config_json = collect_instance_files(args.input, args.root,
                 args.template_keys, args.flatten_hierarchy)
-        elif args.action[0] == "single":
-            if not os.path.isfile(args.action[1]):
-                config_file = get_config_file(args.root, args.action[1])
+        elif args.mode == "single":
+            if not os.path.isfile(args.input):
+                config_file = get_config_file(args.root, args.input)
                 if config_file is None:
                     print("couldn't find config {}".format(config_file),
                         file=sys.stderr)
                     sys.exit(1)
-                args.action[1] = config_file
-            config_json = make_config_json(args.root, args.action[1])
+                args.input = config_file
+            config_json = make_config_json(args.root, args.input)
         if config_json is None:
             print("couldn't make config json", file=sys.stderr)
             sys.exit(1)
