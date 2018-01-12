@@ -2,6 +2,7 @@
 # Copyright Dansk Bibliotekscenter a/s. Licensed under GPLv3
 # See license text at https://opensource.dbc.dk/licenses/gpl-3.0
 
+import io
 import unittest
 
 from mesos_tools import marathon_config_producer
@@ -154,3 +155,55 @@ class TestConfigProducer(unittest.TestCase):
         actual_result = marathon_config_producer.make_hierarchy_dict(
             "parent", instances, True)
         self.assertEqual(expected_result, actual_result)
+
+class TestTemplateKeys(unittest.TestCase):
+    def setUp(self):
+        template_keys_file = io.StringIO(
+            "spongebob=squarepants\npatrick:star\neugene = krabs")
+        self._open = marathon_config_producer.__builtins__["open"]
+        marathon_config_producer.__builtins__["open"] =\
+            lambda x: template_keys_file
+
+    def tearDown(self):
+        marathon_config_producer.__builtins__["open"] = self._open
+
+    def test_template_keys_from_file(self):
+        expected_result = {
+            "spongebob": "squarepants",
+            "eugene": "krabs",
+            "patrick": "star"
+        }
+        actual_result = marathon_config_producer.read_template_keys_file(
+            "")
+        self.assertEqual(expected_result, actual_result)
+
+    def test_template_keys_from_file_parsing_error(self):
+        marathon_config_producer.__builtins__["open"] =\
+            lambda x: io.StringIO("anastasia steele?")
+        with self.assertRaises(marathon_config_producer.ConfigException):
+            marathon_config_producer.read_template_keys_file("")
+
+    def test_template_keys_from_file_io_error(self):
+        # could also be done with the .throw of a generator object (_ for _ in ()).throw(Exception())
+        marathon_config_producer.__builtins__["open"] =\
+            lambda x: raise_exception(IOError("no such file"))
+        with self.assertRaises(marathon_config_producer.ConfigException):
+            marathon_config_producer.read_template_keys_file("")
+
+    def test_merge_template_keys(self):
+        template_keys_args = {
+            "sandy": "cheeks",
+            "spongebob": "scaredypants"
+        }
+        expected_result = {
+            "sandy": "cheeks",
+            "spongebob": "scaredypants",
+            "patrick": "star",
+            "eugene": "krabs"
+        }
+        actual_result = marathon_config_producer.merge_template_keys(
+            "", template_keys_args)
+        self.assertEqual(expected_result, actual_result)
+
+def raise_exception(exception):
+    raise exception

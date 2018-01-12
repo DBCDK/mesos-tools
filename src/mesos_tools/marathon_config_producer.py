@@ -3,6 +3,7 @@
 # See license text at https://opensource.dbc.dk/licenses/gpl-3.0
 
 import argparse
+import configparser
 import copy
 import json
 import os
@@ -43,6 +44,9 @@ def setup_args():
         action=StoreTemplateKeyValuePairsAction,
         help="templated keys to replace with a given value. "
         "e.g. `--template-keys key=value` will replace ${key} with value")
+    parser.add_argument("--template-keys-file", help="read template keys "
+        "from file in key=value format. template keys specified on the "
+        "command line takes precedence over those specified in a file")
     parser.add_argument("--flatten_hierarchy", action="store_true",
         help="flatten the hierarchy when producing a group json file. "
             "/parent/child/grandchild becomes parent-child-grandchild")
@@ -215,8 +219,30 @@ def format_output(config_json, template_keys=None):
         json_output = fill_template(json_output, **template_keys)
     return json_output
 
+def read_template_keys_file(path):
+    try:
+        with open(path) as template_keys_file:
+            # put in a section because configparser expects that
+            template_keys = "[default]\n" + template_keys_file.read()
+            parser = configparser.ConfigParser()
+            parser.read_string(template_keys)
+            return {key: value for key, value in parser["default"].items()}
+    except (IOError, configparser.ParsingError)  as e:
+        raise ConfigException("error parsing template keys file", e)
+
+def merge_template_keys(file_path, template_keys_from_args):
+    template_keys = copy.deepcopy(template_keys_from_args)
+    template_keys_from_file = read_template_keys_file(file_path)
+    for key in template_keys_from_file:
+        if key not in template_keys:
+            template_keys[key] = template_keys_from_file[key]
+    return template_keys
+
 def main():
     args = setup_args()
+    if args.template_keys_file is not None:
+        args.template_keys = merge_template_keys(args.template_keys_file,
+            args.template_keys)
     try:
         config_json = None
         if args.mode == "group":
