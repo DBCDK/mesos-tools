@@ -27,7 +27,8 @@ class StoreTemplateKeyValuePairsAction(argparse.Action):
 
 def setup_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("root", help="root of config directory")
+    parser.add_argument("--root", help="root of config directory",
+        default=os.getcwd())
     parser.add_argument("input", help="corresponding to the value for "
         "--mode, input should either be an application json file or a "
         "group name")
