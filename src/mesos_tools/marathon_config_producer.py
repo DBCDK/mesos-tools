@@ -3,6 +3,7 @@
 # See license text at https://opensource.dbc.dk/licenses/gpl-3.0
 
 import argparse
+import configparser
 import copy
 import json
 import os
@@ -27,19 +28,25 @@ class StoreTemplateKeyValuePairsAction(argparse.Action):
 
 def setup_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("root", help="root of config directory")
-    parser.add_argument("action", metavar="single|group", nargs=2,
-        help="produce a marathon config json file containing either a "
-            "single application or a hierarchy of groups. \"single\" takes "
-            "an instance json file and \"group\" takes a name for the "
-            "top-level group as argument")
+    parser.add_argument("--root", help="root of config directory",
+        default=os.getcwd())
+    parser.add_argument("input", help="corresponding to the value for "
+        "--mode, input should either be an application json file or a "
+        "group name")
     parser.add_argument("-o", "--output",
         help="file to write resulting config json to, defaults to standard out",
         default="-")
+    parser.add_argument("-m", "--mode", help="single or group deploy. "
+        "\"single\" takes an instance json file and \"group\" takes a name for the "
+        "top-level group as input. defaults to single",
+        metavar="single|group", default="single")
     parser.add_argument("--template-keys", nargs="+",
         action=StoreTemplateKeyValuePairsAction,
         help="templated keys to replace with a given value. "
         "e.g. `--template-keys key=value` will replace ${key} with value")
+    parser.add_argument("--template-keys-file", help="read template keys "
+        "from file in key=value format. template keys specified on the "
+        "command line takes precedence over those specified in a file")
     parser.add_argument("--flatten_hierarchy", action="store_true",
         help="flatten the hierarchy when producing a group json file. "
             "/parent/child/grandchild becomes parent-child-grandchild")
@@ -212,22 +219,44 @@ def format_output(config_json, template_keys=None):
         json_output = fill_template(json_output, **template_keys)
     return json_output
 
+def read_template_keys_file(path):
+    try:
+        with open(path) as template_keys_file:
+            # put in a section because configparser expects that
+            template_keys = "[default]\n" + template_keys_file.read()
+            parser = configparser.ConfigParser()
+            parser.read_string(template_keys)
+            return {key: value for key, value in parser["default"].items()}
+    except (IOError, configparser.ParsingError)  as e:
+        raise ConfigException("error parsing template keys file", e)
+
+def merge_template_keys(file_path, template_keys_from_args):
+    template_keys = copy.deepcopy(template_keys_from_args)
+    template_keys_from_file = read_template_keys_file(file_path)
+    for key in template_keys_from_file:
+        if key not in template_keys:
+            template_keys[key] = template_keys_from_file[key]
+    return template_keys
+
 def main():
     args = setup_args()
+    if args.template_keys_file is not None:
+        args.template_keys = merge_template_keys(args.template_keys_file,
+            args.template_keys)
     try:
         config_json = None
-        if args.action[0] == "group":
-            config_json = collect_instance_files(args.action[1], args.root,
+        if args.mode == "group":
+            config_json = collect_instance_files(args.input, args.root,
                 args.template_keys, args.flatten_hierarchy)
-        elif args.action[0] == "single":
-            if not os.path.isfile(args.action[1]):
-                config_file = get_config_file(args.root, args.action[1])
+        elif args.mode == "single":
+            if not os.path.isfile(args.input):
+                config_file = get_config_file(args.root, args.input)
                 if config_file is None:
                     print("couldn't find config {}".format(config_file),
                         file=sys.stderr)
                     sys.exit(1)
-                args.action[1] = config_file
-            config_json = make_config_json(args.root, args.action[1])
+                args.input = config_file
+            config_json = make_config_json(args.root, args.input)
         if config_json is None:
             print("couldn't make config json", file=sys.stderr)
             sys.exit(1)
