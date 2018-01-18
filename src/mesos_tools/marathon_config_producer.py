@@ -231,7 +231,9 @@ def read_template_keys_file(path):
         raise ConfigException("error parsing template keys file", e)
 
 def merge_template_keys(file_path, template_keys_from_args):
-    template_keys = copy.deepcopy(template_keys_from_args)
+    template_keys = {}
+    if template_keys_from_args is not None:
+        template_keys = copy.deepcopy(template_keys_from_args)
     template_keys_from_file = read_template_keys_file(file_path)
     for key in template_keys_from_file:
         if key not in template_keys:
